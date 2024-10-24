@@ -1,0 +1,15 @@
+name: Benchmark
+on: [push]
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          npm install
+          ./benchmarks/benchmark.sh
+      - name: Upload Results
+        uses: actions/upload-artifact@v2
+        with:
+          name: benchmark-results
+          path: benchmarks/results/benchmark-results.md

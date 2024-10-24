@@ -1,0 +1,47 @@
+# macOS files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# macOS Finder attributes
+Icon?
+__MACOSX/
+
+# Node modules and logs
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+bun.lockb
+
+# Docker files and artifacts
+docker-compose.override.yml
+.docker/
+*.pid
+*.sock
+
+# SQLite database files (for persistent mode)
+*.db
+*.db-wal
+*.db-shm
+
+# Build and cache directories
+build/
+dist/
+.cache/
+bun-out/
+
+# Environment variables and sensitive files
+.env
+.env.local
+.env.*.local
+
+# VSCode settings (optional)
+.vscode/
+*.code-workspace
+
+# Logs and temporary files
+logs/
+*.log
+tmp/
+*.swp
