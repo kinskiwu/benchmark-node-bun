@@ -1,26 +1,47 @@
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const express = require("express");
 
 const app = express();
-const db = new sqlite3.Database(':memory:');
-
-db.run('CREATE TABLE tasks (id INTEGER PRIMARY KEY, name TEXT)');
+const tasks = new Map();
 
 app.use(express.json());
 
-app.get('/tasks', (req, res) => {
-  db.all('SELECT * FROM tasks', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+// GET /tasks: Retrieve all tasks
+app.get("/tasks", (req, res) => {
+  res.json([...tasks.values()]);
 });
 
-app.post('/tasks', (req, res) => {
+// POST /tasks: Add a new task
+app.post("/tasks", (req, res) => {
   const { name } = req.body;
-  db.run('INSERT INTO tasks (name) VALUES (?)', [name], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ id: this.lastID });
-  });
+  const id = tasks.size + 1;
+  tasks.set(id, { id, name });
+  res.status(201).json({ id });
 });
 
-app.listen(3000, () => console.log('Node.js API running on http://localhost:3000'));
+// PATCH /tasks/:id: Update an existing task
+app.patch("/tasks/:id", (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!tasks.has(Number(id))) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+  tasks.set(Number(id), { id: Number(id), name });
+  res.status(200).json({ id: Number(id) });
+});
+
+// DELETE /tasks/:id: Delete a task
+app.delete("/tasks/:id", (req, res) => {
+  const { id } = req.params;
+  if (!tasks.delete(Number(id))) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+  res.status(204).send();
+});
+
+// Handle invalid routes
+app.use((req, res) => res.status(404).send("Not found"));
+
+const PORT = 3000;
+app.listen(PORT, () =>
+  console.log(`Node.js API running on http://localhost:${PORT}`)
+);

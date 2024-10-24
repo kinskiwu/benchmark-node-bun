@@ -20,11 +20,6 @@ docker-compose.override.yml
 *.pid
 *.sock
 
-# SQLite database files (for persistent mode)
-*.db
-*.db-wal
-*.db-shm
-
 # Build and cache directories
 build/
 dist/
