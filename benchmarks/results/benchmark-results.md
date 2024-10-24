@@ -38,3 +38,24 @@ Requests/sec:  79662.62
 Transfer/sec:     10.79MB
 Not foundNot foundCompleted Bun benchmark for http://localhost:3001/tasks.
 Benchmarks completed successfully.
+Running Node.js benchmark for http://localhost:3000/tasks...
+{"id":1}Running 10s test @ http://localhost:3000/tasks
+  12 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     6.69ms   12.28ms 315.10ms   99.06%
+    Req/Sec     1.40k   125.81     2.47k    97.16%
+  167035 requests in 10.02s, 42.85MB read
+Requests/sec:  16671.05
+Transfer/sec:      4.28MB
+{"id":1}Completed Node.js benchmark for http://localhost:3000/tasks.
+Running Bun benchmark for http://localhost:3001/tasks...
+{"id":2}Running 10s test @ http://localhost:3001/tasks
+  12 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.24ms  755.07us  29.04ms   97.70%
+    Req/Sec     6.65k   600.49    14.11k    93.03%
+  798563 requests in 10.10s, 127.18MB read
+Requests/sec:  79030.06
+Transfer/sec:     12.59MB
+Not foundNot foundCompleted Bun benchmark for http://localhost:3001/tasks.
+Benchmarks completed successfully.

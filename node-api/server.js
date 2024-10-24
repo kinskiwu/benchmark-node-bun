@@ -1,47 +1,77 @@
-const express = require("express");
-
-const app = express();
+const http = require("http");
 const tasks = new Map();
 
-app.use(express.json());
+// API route handler function
+async function handleRequest(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const id = Number(url.pathname.split("/")[2]);
 
-// GET /tasks: Retrieve all tasks
-app.get("/tasks", (req, res) => {
-  res.json([...tasks.values()]);
-});
+  try {
+    switch (req.method) {
+      // Handle GET request to retrieve all tasks
+      case "GET": {
+        const allTasks = [...tasks.values()];
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify(allTasks));
+      }
+      // Handle POST request to add a new task
+      case "POST": {
+        let body = "";
+        for await (const chunk of req) {
+          body += chunk;
+        }
+        const { name } = JSON.parse(body);
 
-// POST /tasks: Add a new task
-app.post("/tasks", (req, res) => {
-  const { name } = req.body;
-  const id = tasks.size + 1;
-  tasks.set(id, { id, name });
-  res.status(201).json({ id });
-});
+        const id = tasks.size + 1;
+        const newTask = { id, name };
+        tasks.set(id, newTask);
 
-// PATCH /tasks/:id: Update an existing task
-app.patch("/tasks/:id", (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  if (!tasks.has(Number(id))) {
-    return res.status(404).json({ error: "Task not found" });
+        res.writeHead(201, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ id }));
+      }
+
+      // Handle PATCH request to update an existing task
+      case "PATCH": {
+        if (!tasks.has(id)) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "Task not found" }));
+        }
+
+        let body = "";
+        for await (const chunk of req) {
+          body += chunk;
+        }
+        const { name } = JSON.parse(body);
+
+        tasks.set(id, { id, name });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ id }));
+      }
+      // Handle DELETE request to remove a task
+      case "DELETE": {
+        if (!tasks.delete(id)) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "Task not found" }));
+        }
+        res.writeHead(204);
+        return res.end();
+      }
+
+      // Handle unsupported HTTP methods
+      default:
+        res.writeHead(405, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Method Not Allowed" }));
+    }
+  } catch (error) {
+    // Handle unexpected errors
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Invalid Request" }));
   }
-  tasks.set(Number(id), { id: Number(id), name });
-  res.status(200).json({ id: Number(id) });
-});
+}
 
-// DELETE /tasks/:id: Delete a task
-app.delete("/tasks/:id", (req, res) => {
-  const { id } = req.params;
-  if (!tasks.delete(Number(id))) {
-    return res.status(404).json({ error: "Task not found" });
-  }
-  res.status(204).send();
-});
-
-// Handle invalid routes
-app.use((req, res) => res.status(404).send("Not found"));
-
+const server = http.createServer(handleRequest);
 const PORT = 3000;
-app.listen(PORT, () =>
-  console.log(`Node.js API running on http://localhost:${PORT}`)
-);
+
+server.listen(PORT, () => {
+  console.log(`Node.js API running on http://localhost:${PORT}`);
+});
