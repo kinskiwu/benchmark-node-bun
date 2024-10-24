@@ -64,7 +64,7 @@ benchmark-node-bun/
 ### **Prerequisites**
 - **Docker** installed on your machine.
 - **Node.js** and **Bun** installed locally for development.
-- **wrk** and **hyperfine** installed for benchmarking.
+- **wrk**, **ApacheBench** and **hyperfine** installed for benchmarking.
 
 ### **Setup Steps**
 
