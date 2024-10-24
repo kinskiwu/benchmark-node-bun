@@ -1,47 +1,115 @@
 const { serve } = require("bun");
 const db = new Map();
+const { fibonacci } = require("../utils/fibonacci");
 
-// Handle task operations
-async function handleTaskRequest(method, id, req) {
+// Helper function to normalize path (removes trailing slashes)
+function normalizePath(path) {
+  return path.replace(/\/+$/, "");
+}
+
+// Handle task operations in Bun
+async function handleTaskRequest(method, pathname, id, req) {
   try {
     switch (method) {
-      // Handle GET request to retrieve all tasks
       case "GET":
-        return new Response(JSON.stringify([...db.values()]), { status: 200 });
-      // Handle POST request to add a new task
+        // Handle fetching all tasks
+        if (pathname === "/tasks") {
+          console.log("Fetching all tasks");
+          return new Response(JSON.stringify([...db.values()]), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        // Handle fetching a specific task by ID
+        if (pathname.startsWith("/tasks/")) {
+          const taskId = Number(id);
+          if (isNaN(taskId)) {
+            return new Response(JSON.stringify({ error: "Invalid Task ID" }), {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          const task = db.get(taskId);
+          if (!task) {
+            return new Response(JSON.stringify({ error: "Task not found" }), {
+              status: 404,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          console.log(`Fetching task with ID: ${taskId}`);
+          return new Response(JSON.stringify(task), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        // Handle Fibonacci calculation
+        if (pathname.startsWith("/fibonacci/")) {
+          const n = Number(id);
+          const result = fibonacci(n);
+          return new Response(JSON.stringify({ result }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        // Handle unknown routes
+        return new Response(JSON.stringify({ error: "Route not found" }), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+
       case "POST":
         const newId = db.size + 1;
         db.set(newId, { id: newId, name: `Task ${newId}` });
-        return new Response(JSON.stringify({ id: newId }), { status: 201 });
-      // Handle PATCH request to update an existing task
+        return new Response(JSON.stringify({ id: newId }), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        });
+
       case "PATCH":
-        if (!db.has(Number(id))) {
+        const taskId = Number(id);
+        if (isNaN(taskId) || !db.has(taskId)) {
           return new Response(JSON.stringify({ error: "Task not found" }), {
             status: 404,
+            headers: { "Content-Type": "application/json" },
           });
         }
         const { name } = await req.json();
-        db.set(Number(id), { id: Number(id), name });
-        return new Response(JSON.stringify({ id: Number(id) }), {
+        db.set(taskId, { id: taskId, name });
+        return new Response(JSON.stringify({ id: taskId }), {
           status: 200,
+          headers: { "Content-Type": "application/json" },
         });
-      // Handle DELETE request to remove a task
+
       case "DELETE":
         if (!db.delete(Number(id))) {
           return new Response(JSON.stringify({ error: "Task not found" }), {
             status: 404,
+            headers: { "Content-Type": "application/json" },
           });
         }
-        return new Response(null, { status: 204 });
+        return new Response(
+          JSON.stringify({ message: `Task ${id} deleted successfully` }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
 
-      // Handle unsupported HTTP methods
       default:
-        return new Response("Method Not Allowed", { status: 405 });
+        return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
+          status: 405,
+          headers: { "Content-Type": "application/json" },
+        });
     }
   } catch (error) {
-    // Handle unexpected errors
     return new Response(JSON.stringify({ error: "Invalid Request" }), {
       status: 400,
+      headers: { "Content-Type": "application/json" },
     });
   }
 }
@@ -52,8 +120,10 @@ serve({
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
-    const id = url.pathname.split("/")[2];
-    return handleTaskRequest(req.method, id, req);
+    const pathname = normalizePath(url.pathname); // Normalize URL path
+    const id = pathname.split("/")[2] || null; // Extract ID if available
+
+    return handleTaskRequest(req.method, pathname, id, req);
   },
 });
 

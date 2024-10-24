@@ -1,71 +1,104 @@
 const http = require("http");
-const tasks = new Map();
+const tasks = new Map(); // In-memory storage
+const { fibonacci } = require("../utils/fibonacci");
 
-// API route handler function
+// Main API route handler
 async function handleRequest(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const id = Number(url.pathname.split("/")[2]);
+  const url = new URL(req.url, `http://${req.headers.host}`); // Parse the request URL
+  const id = Number(url.pathname.split("/")[2]) || null; // Extract task or Fibonacci ID, if available
 
   try {
     switch (req.method) {
-      // Handle GET request to retrieve all tasks
-      case "GET": {
-        const allTasks = [...tasks.values()];
-        res.writeHead(200, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify(allTasks));
-      }
-      // Handle POST request to add a new task
-      case "POST": {
+      case "GET":
+        // Handle fetching all tasks
+        if (url.pathname === "/tasks") {
+          console.log("Fetching all tasks");
+          res.writeHead(200, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify([...tasks.values()]));
+        }
+
+        // Handle fetching a specific task by ID
+        if (url.pathname.startsWith("/tasks/")) {
+          const taskId = Number(id);
+          if (isNaN(taskId)) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: "Invalid Task ID" }));
+          }
+
+          const task = tasks.get(taskId);
+          if (!task) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: "Task not found" }));
+          }
+
+          console.log(`Fetching task with ID: ${taskId}`);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify(task));
+        }
+
+        // Handle Fibonacci calculation
+        if (url.pathname.startsWith("/fibonacci/")) {
+          try {
+            const n = Number(url.pathname.split("/")[2]); // Extract 'n' from path
+            const result = fibonacci(n);
+            res.writeHead(200, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ result }));
+          } catch (error) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: "Invalid Fibonacci request" }));
+          }
+        }
+
+        // Handle unknown routes
+        res.writeHead(404, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Route not found" }));
+
+      case "POST":
+        // Task creation logic
         let body = "";
         for await (const chunk of req) {
           body += chunk;
         }
         const { name } = JSON.parse(body);
-
-        const id = tasks.size + 1;
-        const newTask = { id, name };
-        tasks.set(id, newTask);
-
+        const newId = tasks.size + 1;
+        tasks.set(newId, { id: newId, name });
         res.writeHead(201, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify({ id }));
-      }
+        return res.end(JSON.stringify({ id: newId }));
 
-      // Handle PATCH request to update an existing task
-      case "PATCH": {
+      case "PATCH":
+        // Task update logic
         if (!tasks.has(id)) {
           res.writeHead(404, { "Content-Type": "application/json" });
           return res.end(JSON.stringify({ error: "Task not found" }));
         }
-
-        let body = "";
+        let updateBody = "";
         for await (const chunk of req) {
-          body += chunk;
+          updateBody += chunk;
         }
-        const { name } = JSON.parse(body);
-
-        tasks.set(id, { id, name });
+        const { name: updatedName } = JSON.parse(updateBody); // Parse updated name
+        tasks.set(id, { id, name: updatedName }); // Update task
         res.writeHead(200, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ id }));
-      }
-      // Handle DELETE request to remove a task
-      case "DELETE": {
+
+      case "DELETE":
+        // Task deletion logic
         if (!tasks.delete(id)) {
           res.writeHead(404, { "Content-Type": "application/json" });
           return res.end(JSON.stringify({ error: "Task not found" }));
         }
-        res.writeHead(204);
-        return res.end();
-      }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ message: `Task ${id} deleted successfully` }));
 
-      // Handle unsupported HTTP methods
       default:
+        // Handle unsupported methods
         res.writeHead(405, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Method Not Allowed" }));
     }
+
   } catch (error) {
     // Handle unexpected errors
     res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Invalid Request" }));
+    return res.end(JSON.stringify({ error: "Invalid Request" }));
   }
 }
 
