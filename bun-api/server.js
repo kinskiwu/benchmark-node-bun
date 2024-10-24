@@ -20,6 +20,28 @@ function handleTaskRequest(method, url) {
     return new Response(JSON.stringify({ id: newId }), { status: 201 });
   }
 
+  // PATCH /tasks/:id: Update an existing task
+  if (method === "PATCH" && id) {
+    if (!db.has(Number(id))) {
+      return new Response(JSON.stringify({ error: "Task not found" }), {
+        status: 404,
+      });
+    }
+    const { name } = JSON.parse(req.text());
+    db.set(Number(id), { id: Number(id), name });
+    return new Response(JSON.stringify({ id: Number(id) }), { status: 200 });
+  }
+
+  // DELETE /tasks/:id: Delete a task
+  if (method === "DELETE" && id) {
+    if (!db.delete(Number(id))) {
+      return new Response(JSON.stringify({ error: "Task not found" }), {
+        status: 404,
+      });
+    }
+    return new Response(null, { status: 204 });
+  }
+
   return new Response("Not allowed", { status: 405 });
 }
 

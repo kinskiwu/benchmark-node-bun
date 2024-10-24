@@ -18,6 +18,26 @@ app.post("/tasks", (req, res) => {
   res.status(201).json({ id });
 });
 
+// PATCH /tasks/:id: Update an existing task
+app.patch("/tasks/:id", (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!tasks.has(Number(id))) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+  tasks.set(Number(id), { id: Number(id), name });
+  res.status(200).json({ id: Number(id) });
+});
+
+// DELETE /tasks/:id: Delete a task
+app.delete("/tasks/:id", (req, res) => {
+  const { id } = req.params;
+  if (!tasks.delete(Number(id))) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+  res.status(204).send();
+});
+
 // Handle invalid routes
 app.use((req, res) => res.status(404).send("Not found"));
 
