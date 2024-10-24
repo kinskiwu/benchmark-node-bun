@@ -9,7 +9,7 @@ jobs:
           npm install
           ./benchmarks/benchmark.sh
       - name: Upload Results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: benchmark-results
           path: benchmarks/results/benchmark-results.md
